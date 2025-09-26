@@ -14,57 +14,31 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session?.user) {
-        router.push('/login');
-        return;
-      }
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session?.user) {
+          router.push('/login');
+          return;
+        }
 
-      // Fetch user profile
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
-
-      if (profile) {
-        setUser({
-          id: profile.id,
-          email: profile.email,
-          name: profile.name,
-          role: profile.role,
-          avatar_url: profile.avatar_url,
-        });
-      } else {
-        // Create profile if it doesn't exist
+        // For demo purposes, create a user object from session data
         const userData = session.user.user_metadata;
-        const newProfile = {
+        const demoUser: User = {
           id: session.user.id,
           email: session.user.email || '',
-          name: userData.name || userData.full_name || 'User',
+          name: userData.name || userData.full_name || session.user.email?.split('@')[0] || 'User',
           role: userData.role || 'nurse',
           avatar_url: userData.avatar_url || null
         };
 
-        const { data: createdProfile } = await supabase
-          .from('profiles')
-          .insert(newProfile)
-          .select()
-          .single();
-
-        if (createdProfile) {
-          setUser({
-            id: createdProfile.id,
-            email: createdProfile.email,
-            name: createdProfile.name,
-            role: createdProfile.role,
-            avatar_url: createdProfile.avatar_url,
-          });
-        }
+        setUser(demoUser);
+      } catch (error) {
+        console.error('Error fetching user:', error);
+        router.push('/login');
+      } finally {
+        setLoading(false);
       }
-      
-      setLoading(false);
     };
 
     getUser();
